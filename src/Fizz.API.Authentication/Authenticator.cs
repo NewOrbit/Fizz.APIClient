@@ -9,15 +9,22 @@ namespace Fizz.API.Authentication
 {
     public class Authenticator
     {
-        private string key;
-        private string secret;
+        private readonly string key;
+        private readonly string secret;
 
+        private readonly Func<DateTime> systemTimeProvider;
+
+        
         private const string signatureParamName = "&signature=";
 
-        public Authenticator(string key, string secret)
+        public Authenticator(string key, string secret) : this(key, secret, () => DateTime.UtcNow)
+        {}
+
+        public Authenticator(string key, string secret, Func<DateTime> systemTimeProvider)
         {
             this.key = key;
             this.secret = secret;
+            this.systemTimeProvider = systemTimeProvider;
         }
 
         /// <summary>
@@ -47,7 +54,7 @@ namespace Fizz.API.Authentication
 
             queryParams.Add("key", Uri.EscapeDataString(this.key));
             queryParams.Add("nonce", Guid.NewGuid().ToString("N"));
-            queryParams.Add("timestamp", ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture));
+            queryParams.Add("timestamp", ((DateTimeOffset)systemTimeProvider()).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture));
 
             
             builder.Query = String.Join("&", queryParams.Select(qp => $"{qp.Key}={qp.Value}"));
@@ -64,6 +71,18 @@ namespace Fizz.API.Authentication
             var index = url.IndexOf(signatureParamName);
             var unsignedUrl = url.Substring(0, index);
             var sig = url.Substring(index + signatureParamName.Length);
+            
+
+            // Check timestamp
+            var queryParams = new Uri(url).GetQueryParams();
+            var timestampms = long.Parse(queryParams["timestamp"]);
+            var timestamp = DateTimeOffset.FromUnixTimeSeconds(timestampms).DateTime;
+            var currentTime = systemTimeProvider();
+            if ((currentTime - timestamp) > TimeSpan.FromMinutes(60))
+            {
+                return false;
+            }
+
             var expectedSig = GetSignature(unsignedUrl);
             return sig == expectedSig;
         }

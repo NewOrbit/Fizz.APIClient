@@ -96,19 +96,30 @@ namespace Fizz.API.Authentication.Tests
         [Fact]
         public void VerificationWillFailWhenTimestampExpired()
         {
-        //Given
-        
-        //When
-        
-        //Then
+            var url = "http://www.fizzbenefits.com/foo/bar";
+
+            var encoder = GetAuthenticator(() => DateTime.SpecifyKind(new DateTime(2020,12,31,22,0,0), DateTimeKind.Utc));
+            var authenticatedUrl = encoder.GetAuthenticatedUrl(url);
+
+            var verifier = GetAuthenticator(() => DateTime.SpecifyKind(new DateTime(2020,12,31,23,1,0), DateTimeKind.Utc));
+            var actual = verifier.VerifyAuthenticatedUrl(authenticatedUrl);
+
+            actual.ShouldBeFalse();
         }
-
-
         
-
-        private Authenticator GetAuthenticator()
+        private Authenticator GetAuthenticator(Func<DateTime> systemTimeProvider = null)
         {
-            return new Authenticator("abc","123");
+            var key = "abc";
+            var secret = "123";
+
+            if (systemTimeProvider == null)
+            {
+                return new Authenticator(key, secret);
+            }
+            else
+            {
+                return new Authenticator(key, secret, systemTimeProvider);
+            }
         }
     }
 }
