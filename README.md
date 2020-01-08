@@ -1,6 +1,8 @@
 # Fizz API client
 
 ## Introduction
+When you work with Cashback offers in Fizz, you work at two levels. Firstly, there is a list of *retailers* that you can retrieve in full. You can then retrieve the details for an individual retailer, including the specific offers and conditions for that retailer.
+
 In order to integrate to Fizz Benefits there are only a few things you need to do:
 - Retrieve cash back offers in your server code and render them to your users.
   - Retrieve the full list for list and search purposes
@@ -9,6 +11,8 @@ In order to integrate to Fizz Benefits there are only a few things you need to d
 
 There are no exposed API methods for managing users or retrieving data about activity or savings.  
 Your users will automatically be created in Fizz when the user first clicks through on an offer meaning there is no need to set up any user synchronisation mechanism (See "Link to an offer" below).
+
+Note that the retailer list and offers change frequently and you should avoid caching the offers for long. We recommend no more than one hour.
 
 ## Authentication
 The authentication method used is a variation on two-legged oAuth 1.0. This is is particularly useful when creating the authenticated links that the end-user can click on, as they are simple GETs with no headers or cookies. For simplicity, the same authentication mechanism is used for the server-to-server communication.
@@ -78,36 +82,212 @@ https://www.fizzbenefits.com/api/offers/cashback
 ```
 (with the appropriate authentication params appended).
 
-The request will return a JSON object with the following data:  
+The request will return a JSON array of retailer summaries, the categories for each retailer and a count of the number of offers for each retailer.
 
-**TBD – pending changes to feed API calls.**
+```json
+[
+    {
+        "RetailerId": "e6a6e027-d8ae-4f3b-ae50-82b84cbd06aa",
+        "Name": "Expedia",
+        "Disabled": false,
+        "ThumbnailImageUrl": "https://d2t2wfirfyzjhs.cloudfront.net/images/suppliers/large-logos/expedianewl.png",
+        "CashbackOfferCount": 7,
+        "TotalOfferCount": 7,
+        "TagList": [
+            "8",
+            "8/50",
+            "64"
+        ]
+    },
+    ....
+]
+```
+*Note: Do not display offers when `Disabled` is `true`.
 
 ### Retrieve the list of categories
 Cash back offers are organised into hierarchical categories that you may expose to end-users in order to help them identify offers.
 
 In order to retrieve the current categories, make a `GET` call to 
 ```
-https://www.fizzbenefits.com/api/CashbackCategories  
+https://www.fizzbenefits.com/api/offers/cashback/categories 
 ```
-**TBD: Consider changing to or allowing /api/offers/cashback/categories**  
-**TBD: Or do we include the category list in the list of cashback offers? May make more sense to just have one object with everything?**
 
-### Filter offers by category
+### Filter retailers by category
 The categories are hierarchical. For example, you may have "Travel", underneath which you have "Holidays".  
-Each offer has a category hierarchy ID **TBD: field name**. For example, assuming the "Travel" category has ID 8 and "Holidays" (which is underneath that) has ID 50 then an offer specifically for Holidays will have a hierarchy ID "8/50/". If you want to find all Travel offers, find all offers where the hierarchy ID starts with "8/". If you want only holidays, look for offers where the hierarchy ID starts with "8/50/".  
-**TBD: I can't actually find this field in the JSON I see from the server???**
-
+Each retailer has one or more category hierarchy IDs in the `TagList` array. For example, assuming the "Travel" category has ID 8 and "Holidays" (which is underneath that) has ID 50 then an offer specifically for Holidays will have "8/50/" in a Tag. If you want to find all Travel offers, find all offers where the hierarchy ID starts with "8/". If you want only holidays, look for offers where the hierarchy ID starts with "8/50/".  
 
 ### Retrieve the details of an individual offer
-The offer list only contains enough information to list and search offers. When a users clicks on an offer to see more details, you need to make another call to retrieve the full details of the offer so you can display it to the user.
+The retailer list only contains enough information to list and search offers. When a users clicks on a retailer to see more details, you need to make another call to retrieve the full details of the retailer, including the specific offers, so you can display it to the user.
 
 In order to retrieve the details of a specific cash back offer, make a GET call to 
 ```
-/api/offers/cashback/{offerId}.
+/api/offers/cashback/{retailerId}.
 ```
 (with the appropriate authentication query parameters)
 
-**TBD – probably the exact format we use today??**
+```JSON
+{
+    "Offers": [
+        {
+            "Id": 423207,
+            "Title": "Flights",
+            "CashbackDetails": {
+                "Type": 2,
+                "Value": 0.9
+            },
+            "EarnDetail": ""
+        },
+        {
+            "Id": 428876,
+            "Title": "Hotel Booking of 2 nights or more",
+            "CashbackDetails": {
+                "Type": 2,
+                "Value": 7.2
+            },
+            "EarnDetail": ""
+        },
+        {
+            "Id": 428937,
+            "Title": "Hotel Booking of 1 night",
+            "CashbackDetails": {
+                "Type": 2,
+                "Value": 5.4
+            },
+            "EarnDetail": ""
+        },
+        {
+            "Id": 430874,
+            "Title": "Experiences",
+            "CashbackDetails": {
+                "Type": 2,
+                "Value": 10.8
+            },
+            "EarnDetail": "Without Using Code Online"
+        },
+        {
+            "Id": 430875,
+            "Title": "Ground Transportation/Shuttles/Transfers",
+            "CashbackDetails": {
+                "Type": 2,
+                "Value": 9.9
+            },
+            "EarnDetail": "Excludes train bookings"
+        },
+        {
+            "Id": 430876,
+            "Title": "Car Hire",
+            "CashbackDetails": {
+                "Type": 2,
+                "Value": 9.0
+            },
+            "EarnDetail": ""
+        },
+        {
+            "Id": 430877,
+            "Title": "All Other Packages",
+            "CashbackDetails": {
+                "Type": 2,
+                "Value": 3.6
+            },
+            "EarnDetail": "Flight + Hotel / Flight + Car / Flight + Hotel + Car / Hotel + Car bookings"
+        }
+    ],
+    "Description": "Get a great deal on flights, hotels and holiday packages at Expedia, and save even more money with our cashback and discount code deals. Search more than 500,000 hotels and 400 airlines worldwide. Whether you are planning a beach holiday or city break, get a great deal with these offers and discount codes. Stay in London, Edinburgh or Dublin, or jet off to New York, Dubai, Egypt, Thailand or Mexico. Browse last-minute deals, Eurostar offers and ski holidays, while you can also book car hire.",
+    "RetailerInfo": [
+        {
+            "HeaderTitle": "What will stop me getting cashback?",
+            "Details": [
+                {
+                    "Text": "Using a promotional/voucher code not posted and approved by Fizz Benefits.",
+                    "SortOrder": 1
+                },
+                {
+                    "Text": "If you make a cottage booking",
+                    "SortOrder": 1
+                },
+                {
+                    "Text": "If you make a booking for Cuba",
+                    "SortOrder": 1
+                },
+                {
+                    "Text": "If you use nectar points to pay.",
+                    "SortOrder": 1
+                }
+            ]
+        },
+        {
+            "HeaderTitle": "Good to know",
+            "Details": [
+                {
+                    "Text": "Expedia cashback can be earned simply by clicking through to the merchant and shopping as normal.",
+                    "SortOrder": 1
+                },
+                {
+                    "Text": "Expedia Cashback is available through Fizz Benefits on genuine, tracked transactions completed immediately and wholly online.",
+                    "SortOrder": 1
+                },
+                {
+                    "Text": "Recurrences on the amount of purchases that can be made while earning cashback may be limited.",
+                    "SortOrder": 1
+                },
+                {
+                    "Text": "An ePackage is a flight and hotel booked in the same transaction. A holiday is defined as a package holiday",
+                    "SortOrder": 1
+                },
+                {
+                    "Text": "Unless otherwise stated expect transactions for this retailer to appear within 24 hours.",
+                    "SortOrder": 1
+                },
+                {
+                    "Text": "Cashback is not paid until your stay has been completed.",
+                    "SortOrder": 1
+                }
+            ]
+        },
+        {
+            "HeaderTitle": "What to do when",
+            "Details": [
+                {
+                    "Text": "Some merchants may not be forthcoming with untracked cashback.  We endeavour to chase untracked cashback but reserve the right to halt enquiries at any time.  Please do not make purchase decisions based upon expected cashback as it is not guaranteed.",
+                    "SortOrder": 1
+                },
+                {
+                    "Text": "The vast majority of transactions from merchants track successfully, occasionally a transaction may not get reported.  If you believe this to be the case, please submit a \"Missing Cashback\" query within 100 days of the transaction, we will be unable to chase up claims older than this.",
+                    "SortOrder": 1
+                },
+                {
+                    "Text": "Please ensure any claims for untracked cashback are raised as soon as the stay/flights in the booking have been completed, as this merchant can only review claims for 3 months once the stay/flight dates have passed.",
+                    "SortOrder": 1
+                }
+            ]
+        },
+        {
+            "HeaderTitle": "What else is essential?",
+            "Details": [
+                {
+                    "Text": "Purchases must be made through Expedia's UK site in order to be tracked",
+                    "SortOrder": 1
+                }
+            ]
+        }
+    ],
+    "RetailerId": "d8ae-4f3b-ae50-82b84cbd06aa",
+    "Name": "Expedia",
+    "Disabled": false,
+    "ThumbnailImageUrl": "https://d2t2wfirfyzjhs.cloudfront.net/images/suppliers/large-logos/expedianewl.png",
+    "CashbackOfferCount": 7,
+    "TotalOfferCount": 7,
+    "TagList": [
+        "8",
+        "8/50",
+        "64"
+    ]
+}
+```
+
+For each *offer*, under Cashback Details the Type can have the following values:
+1 = Pounds
+2 = Percent
 
 ## Link to an offer
 When a user clicks on an offer, you need to create a URL and redirect the user to this URL.
