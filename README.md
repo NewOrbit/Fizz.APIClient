@@ -111,6 +111,7 @@ In order to retrieve the current categories, make a `GET` call to
 ```
 https://www.fizzbenefits.com/api/offers/cashback/categories 
 ```
+(with the appropriate authentication params appended).
 
 ### Filter retailers by category
 The categories are hierarchical. For example, you may have "Travel", underneath which you have "Holidays".  
@@ -293,7 +294,7 @@ For each *offer*, under Cashback Details the Type can have the following values:
 When a user clicks on an offer, you need to create a URL and redirect the user to this URL.
 The format should be 
 ```
-https://www.fizzbenefits.com/useoffer/cashback/offerId?userId={userId}&key={key}&nonce={nonce}&timestamp={timestamp}&signature={hmac}
+https://www.fizzbenefits.com/useoffer/cashback/{offerId}/{userId}?key={key}&nonce={nonce}&timestamp={timestamp}&signature={hmac}
 ```
 Key, nonce, timestamp and signature are as explained in the authentication section.  
 
