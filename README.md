@@ -104,6 +104,40 @@ The request will return a JSON array of retailer summaries, the categories for e
 ```
 *Note: Do not display offers when `Disabled` is `true`.
 
+### Retrieve a list of member transactions within a organization
+In order to retrieve the list of member transactions, make a `GET` call to
+```
+https://www.fizzbenefits.com/api/memberTransactions/{fromDate}/{toDate}
+```
+(with the appropriate authentication params appended, the organisation will be derived from the authenticated user).
+
+The request will return a JSON array of member transactions.
+
+```json
+"MemberTransactions": [
+  {
+    "TransactionId": 123456,
+    "MemberId": "C123456",
+    "TransactionDate": "2021-09-26T07:08:42Z",
+    "MerchantId": 123456,
+    "MerchantDescription": "Some Desc",
+    "PurchaseAmount": 4.0,
+    "CashbackAmount": 21,
+    "Status": "Cancelled"
+  },
+  {
+    "TransactionId": 123,
+    "MemberId": "C123",
+    "TransactionDate": "2021-09-24T23:30:38Z",
+    "MerchantId": 123,
+    "MerchantDescription": "Some Desc",
+    "PurchaseAmount": 20.0,
+    "CashbackAmount": 18,
+    "Status": "Payable"
+  },
+]
+```
+
 ### Retrieve the list of categories
 Cash back offers are organised into hierarchical categories that you may expose to end-users in order to help them identify offers.
 
